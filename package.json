@@ -1,0 +1,11 @@
+{
+  "name": "clean-english",
+  "version": "1.0.0",
+  "description": "A simple web app to rewrite English text into clear, natural language using AI",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "vercel build"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
