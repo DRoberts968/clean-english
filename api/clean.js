@@ -20,43 +20,48 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Text required' });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.HUGGINGFACE_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: 'API key missing' });
   }
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api-inference.huggingface.co/models/facebook/bart-large-cnn', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'Fix grammar, spelling, and punctuation. Keep original meaning. Use simple English. Return only cleaned text.'
-          },
-          {
-            role: 'user',
-            content: text
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000
+        inputs: `Fix grammar, spelling, and punctuation in this text. Keep the original meaning and use simple English. Return only the cleaned text:\n\n${text}`,
+        parameters: {
+          max_length: 512,
+          min_length: 10,
+        }
       })
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      return res.status(response.status).json({ error: data.error?.message || 'OpenAI error' });
+      return res.status(response.status).json({ error: data.error || 'Hugging Face API error' });
     }
 
-    const cleaned = data.choices[0].message.content.trim();
-    res.status(200).json({ cleaned });
+    // Handle both array and object responses from Hugging Face
+    let cleaned = '';
+    if (Array.isArray(data)) {
+      cleaned = data[0]?.summary_text || data[0]?.generated_text || '';
+    } else if (data.summary_text) {
+      cleaned = data.summary_text;
+    } else if (data.generated_text) {
+      cleaned = data.generated_text;
+    }
+
+    if (!cleaned) {
+      return res.status(500).json({ error: 'No response from AI model' });
+    }
+
+    res.status(200).json({ cleaned: cleaned.trim() });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
