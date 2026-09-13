@@ -22,10 +22,14 @@ module.exports = async (req, res) => {
 
   const apiKey = process.env.HUGGINGFACE_API_KEY;
   if (!apiKey) {
+    console.error('HUGGINGFACE_API_KEY not found in environment');
     return res.status(500).json({ error: 'API key missing' });
   }
 
+  console.log('API Key found, length:', apiKey.length);
+
   try {
+    console.log('Sending request to Hugging Face...');
     const response = await fetch('https://api-inference.huggingface.co/models/pszemraj/long-t5-tglobal-base-sci-simplify', {
       method: 'POST',
       headers: {
@@ -40,9 +44,12 @@ module.exports = async (req, res) => {
       })
     });
 
+    console.log('Response status:', response.status);
     const data = await response.json();
+    console.log('Response data:', JSON.stringify(data).substring(0, 200));
 
     if (!response.ok) {
+      console.error('Hugging Face error:', data);
       return res.status(response.status).json({ error: data.error || 'Hugging Face API error' });
     }
 
@@ -57,11 +64,13 @@ module.exports = async (req, res) => {
     }
 
     if (!cleaned) {
+      console.error('No cleaned text in response');
       return res.status(500).json({ error: 'No response from AI model' });
     }
 
     res.status(200).json({ cleaned: cleaned.trim() });
   } catch (error) {
+    console.error('Catch error:', error.message);
     res.status(500).json({ error: error.message });
   }
 };
