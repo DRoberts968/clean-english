@@ -25,6 +25,7 @@ module.exports = async (req, res) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'clean-english/1.0'
       },
       body: new URLSearchParams({
         text: text,
@@ -32,13 +33,28 @@ module.exports = async (req, res) => {
       }).toString()
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
+    
+    console.log('LanguageTool response status:', response.status);
+    console.log('LanguageTool response type:', response.headers.get('content-type'));
+    console.log('LanguageTool response first 200 chars:', responseText.substring(0, 200));
 
     if (!response.ok) {
-      console.error('LanguageTool API error:', data);
       return res.status(response.status).json({ 
-        error: 'LanguageTool API error',
-        details: data.message || 'Unknown error'
+        error: `LanguageTool API returned ${response.status}`,
+        details: responseText.substring(0, 300)
+      });
+    }
+
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('JSON parse error from LanguageTool');
+      return res.status(500).json({ 
+        error: 'Invalid response from LanguageTool API',
+        details: responseText.substring(0, 300),
+        message: 'Server returned HTML instead of JSON'
       });
     }
 
