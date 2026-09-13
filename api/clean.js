@@ -26,17 +26,16 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const response = await fetch('https://api-inference.huggingface.co/models/facebook/bart-large-cnn', {
+    const response = await fetch('https://api-inference.huggingface.co/models/pszemraj/long-t5-tglobal-base-sci-simplify', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        inputs: `Fix grammar, spelling, and punctuation in this text. Keep the original meaning and use simple English. Return only the cleaned text:\n\n${text}`,
+        inputs: text,
         parameters: {
           max_length: 512,
-          min_length: 10,
         }
       })
     });
@@ -47,9 +46,9 @@ module.exports = async (req, res) => {
       return res.status(response.status).json({ error: data.error || 'Hugging Face API error' });
     }
 
-    // Handle both array and object responses from Hugging Face
+    // Handle array response from Hugging Face
     let cleaned = '';
-    if (Array.isArray(data)) {
+    if (Array.isArray(data) && data.length > 0) {
       cleaned = data[0]?.summary_text || data[0]?.generated_text || '';
     } else if (data.summary_text) {
       cleaned = data.summary_text;
